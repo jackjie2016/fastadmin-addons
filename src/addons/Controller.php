@@ -92,7 +92,7 @@ class Controller extends \think\Controller
         $this->action = $action ? call_user_func($filter, $action) : 'index';
 
         // 重置配置
-        Config::set('template.view_path', ADDON_PATH . $this->addon . DS . 'view' . DS);
+        Config::set('template.view_path', Env::get("ADDON_PATH") . $this->addon . DS . 'view' . DS);
 
         // 父类的调用必须放在设置模板路径之后
         parent::__construct($this->request);
@@ -106,7 +106,7 @@ class Controller extends \think\Controller
 
         // 加载系统语言包
         Lang::load([
-            ADDON_PATH . $this->addon . DS . 'lang' . DS . $this->request->langset() . EXT,
+            Env::get("ADDON_PATH") . $this->addon . DS . 'lang' . DS . $this->request->langset() . EXT,
         ]);
 
         // 设置替换字符串

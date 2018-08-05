@@ -8,7 +8,7 @@ use RecursiveIteratorIterator;
 use think\Db;
 use think\Exception;
 use ZipArchive;
-
+use think\facade\Env;
 /**
  * 插件服务
  * @package think\addons
@@ -27,7 +27,7 @@ class Service
      */
     public static function download($name, $extend = [])
     {
-        $addonTmpDir = RUNTIME_PATH . 'addons' . DS;
+        $addonTmpDir =   Env::get("RUNTIME_PATH"). 'addons' . DS;
         if (!is_dir($addonTmpDir))
         {
             @mkdir($addonTmpDir, 0755, true);
@@ -84,8 +84,8 @@ class Service
      */
     public static function unzip($name)
     {
-        $file = RUNTIME_PATH . 'addons' . DS . $name . '.zip';
-        $dir = ADDON_PATH . $name . DS;
+        $file = Env::get("RUNTIME_PATH") . 'addons' . DS . $name . '.zip';
+        $dir =Env::get("ADDON_PATH")  . $name . DS;
         if (class_exists('ZipArchive'))
         {
             $zip = new ZipArchive;
@@ -113,7 +113,7 @@ class Service
      */
     public static function check($name)
     {
-        if (!$name || !is_dir(ADDON_PATH . $name))
+        if (!$name || !is_dir(Env::get("ADDON_PATH") . $name))
         {
             throw new Exception('Addon not exists');
         }
@@ -157,7 +157,7 @@ class Service
      */
     public static function importsql($name)
     {
-        $sqlFile = ADDON_PATH . $name . DS . 'install.sql';
+        $sqlFile = Env::get("ADDON_PATH") . $name . DS . 'install.sql';
         if (is_file($sqlFile))
         {
             $lines = file($sqlFile);
@@ -200,13 +200,13 @@ class Service
         $bootstrapArr = [];
         foreach ($addons as $name => $addon)
         {
-            $bootstrapFile = ADDON_PATH . $name . DS . 'bootstrap.js';
+            $bootstrapFile = Env::get("ADDON_PATH") . $name . DS . 'bootstrap.js';
             if ($addon['state'] && is_file($bootstrapFile))
             {
                 $bootstrapArr[] = file_get_contents($bootstrapFile);
             }
         }
-        $addonsFile = ROOT_PATH . str_replace("/", DS, "public/assets/js/addons.js");
+        $addonsFile = Env::get("ADDON_PATH") . str_replace("/", DS, "public/assets/js/addons.js");
         if ($handle = fopen($addonsFile, 'w'))
         {
             $tpl = <<<EOD
@@ -222,7 +222,7 @@ EOD;
             throw new Exception("addons.js文件没有写入权限");
         }
 
-        $file = APP_PATH . 'extra' . DS . 'addons.php';
+        $file = Env::get("ADDON_PATH") . 'extra' . DS . 'addons.php';
 
         $config = get_addon_autoload_config(true);
         if ($config['autoload'])
@@ -257,7 +257,7 @@ EOD;
      */
     public static function install($name, $force = false, $extend = [])
     {
-        if (!$name || (is_dir(ADDON_PATH . $name) && !$force))
+        if (!$name || (is_dir(Env::get("ADDON_PATH") . $name) && !$force))
         {
             throw new Exception('Addon already exists');
         }
@@ -303,7 +303,7 @@ EOD;
         {
             if (is_dir($addonDir . $dir))
             {
-                copydirs($addonDir . $dir, ROOT_PATH . $dir);
+                copydirs($addonDir . $dir, Env::get("ROOT_PATH") . $dir);
             }
         }
 
@@ -348,7 +348,7 @@ EOD;
      */
     public static function uninstall($name, $force = false)
     {
-        if (!$name || !is_dir(ADDON_PATH . $name))
+        if (!$name || !is_dir(Env::get("ADDON_PATH") . $name))
         {
             throw new Exception('Addon not exists');
         }
@@ -371,7 +371,7 @@ EOD;
             $list = Service::getGlobalFiles($name);
             foreach ($list as $k => $v)
             {
-                @unlink(ROOT_PATH . $v);
+                @unlink(Env::get("ROOT_PATH") . $v);
             }
         }
 
@@ -391,7 +391,7 @@ EOD;
         }
 
         // 移除插件目录
-        rmdirs(ADDON_PATH . $name);
+        rmdirs(Env::get("ADDON_PATH")  . $name);
 
         // 刷新
         Service::refresh();
@@ -406,7 +406,7 @@ EOD;
      */
     public static function enable($name, $force = false)
     {
-        if (!$name || !is_dir(ADDON_PATH . $name))
+        if (!$name || !is_dir(Env::get("ADDON_PATH") . $name))
         {
             throw new Exception('Addon not exists');
         }
@@ -416,7 +416,7 @@ EOD;
             Service::noconflict($name);
         }
 
-        $addonDir = ADDON_PATH . $name . DS;
+        $addonDir = Env::get("ADDON_PATH") . $name . DS;
 
         // 复制文件
         $sourceAssetsDir = self::getSourceAssetsDir($name);
@@ -429,7 +429,7 @@ EOD;
         {
             if (is_dir($addonDir . $dir))
             {
-                copydirs($addonDir . $dir, ROOT_PATH . $dir);
+                copydirs($addonDir . $dir, Env::get("ROOT_PATH")  . $dir);
             }
         }
 
@@ -472,7 +472,7 @@ EOD;
      */
     public static function disable($name, $force = false)
     {
-        if (!$name || !is_dir(ADDON_PATH . $name))
+        if (!$name || !is_dir(Env::get("ADDON_PATH")   . $name))
         {
             throw new Exception('Addon not exists');
         }
@@ -492,7 +492,7 @@ EOD;
         $list = Service::getGlobalFiles($name);
         foreach ($list as $k => $v)
         {
-            @unlink(ROOT_PATH . $v);
+            @unlink(Env::get("ROOT_PATH") . $v);
         }
 
         $info = get_addon_info($name);
@@ -596,11 +596,11 @@ EOD;
     public static function getGlobalFiles($name, $onlyconflict = false)
     {
         $list = [];
-        $addonDir = ADDON_PATH . $name . DS;
+        $addonDir = Env::get("ADDON_PATH")  . $name . DS;
         // 扫描插件目录是否有覆盖的文件
         foreach (self::getCheckDirs() as $k => $dir)
         {
-            $checkDir = ROOT_PATH . DS . $dir . DS;
+            $checkDir = Env::get("ROOT_PATH") . DS . $dir . DS;
             if (!is_dir($checkDir))
                 continue;
             //检测到存在插件外目录
@@ -619,7 +619,7 @@ EOD;
                         $path = str_replace($addonDir, '', $filePath);
                         if ($onlyconflict)
                         {
-                            $destPath = ROOT_PATH . $path;
+                            $destPath = Env::get("ROOT_PATH")   . $path;
                             if (is_file($destPath))
                             {
                                 if (filesize($filePath) != filesize($destPath) || md5_file($filePath) != md5_file($destPath))
@@ -646,7 +646,7 @@ EOD;
      */
     protected static function getSourceAssetsDir($name)
     {
-        return ADDON_PATH . $name . DS . 'assets' . DS;
+        return   Env::get("ADDON_PATH")   . $name . DS . 'assets' . DS;
     }
 
     /**
@@ -656,7 +656,7 @@ EOD;
      */
     protected static function getDestAssetsDir($name)
     {
-        $assetsDir = ROOT_PATH . str_replace("/", DS, "public/assets/addons/{$name}/");
+        $assetsDir = Env::get("ROOT_PATH")   . str_replace("/", DS, "public/assets/addons/{$name}/");
         if (!is_dir($assetsDir))
         {
             mkdir($assetsDir, 0755, true);
